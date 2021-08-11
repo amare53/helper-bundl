@@ -16,14 +16,14 @@
     ],
     "require": {
         "php": "^8.0",
-        "doctrine/orm": "^2.9.*",
-        "symfony/framework-bundle": "^5.*.*",
-        "knplabs/knp-paginator-bundle": "^5.*.*",
-        "phpdocumentor/reflection-docblock": "^5.*.*",
-        "symfony/property-access": "^5.*.*",
-        "symfony/serializer": "^5.*.*",
-        "symfony/validator": "^5.*.*",
-        "symfony/password-hasher": "^5.*.*"
+        "doctrine/orm": "^2.9",
+        "symfony/framework-bundle": "^5.3",
+        "knplabs/knp-paginator-bundle": "^5.6",
+        "phpdocumentor/reflection-docblock": "^5.2",
+        "symfony/property-access": "^5.3",
+        "symfony/serializer": "^5.3",
+        "symfony/validator": "^5.0",
+        "symfony/password-hasher": "^5.2"
     },
     "require-dev": {
     }
