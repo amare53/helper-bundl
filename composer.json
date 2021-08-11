@@ -3,11 +3,6 @@
     "type": "symfony-bundle",
     "license": "MIT",
     "homepage": "https://github.com/amare53/helper-bundle",
-    "autoload-dev": {
-        "psr-4": {
-            "App\\Tests\\": "Tests/"
-        }
-    },
     "autoload": {
         "psr-4": {
             "Amare53\\HelperBundle\\": "src/"
@@ -21,20 +16,15 @@
     ],
     "require": {
         "php": "^8.0",
-        "doctrine/orm": "2.9.*",
-        "symfony/framework-bundle": "5.3.*",
-        "knplabs/knp-paginator-bundle": "5.6.*",
-        "phpdocumentor/reflection-docblock": "5.2.*",
-        "symfony/property-access": "5.3.*",
-        "symfony/serializer": "5.3.*",
-        "symfony/validator": "6.0.*",
-        "symfony/password-hasher": "6.0.*"
+        "doctrine/orm": "^2.9.*",
+        "symfony/framework-bundle": "^5.*.*",
+        "knplabs/knp-paginator-bundle": "^5.*.*",
+        "phpdocumentor/reflection-docblock": "^5.*.*",
+        "symfony/property-access": "^5.*.*",
+        "symfony/serializer": "^5.*.*",
+        "symfony/validator": "^5.*.*",
+        "symfony/password-hasher": "^5.*.*"
     },
     "require-dev": {
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.0.0-dev"
-        }
     }
 }
