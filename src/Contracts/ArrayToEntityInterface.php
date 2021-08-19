@@ -9,7 +9,7 @@
 namespace Amare53\HelperBundle\Contracts;
 
 
-interface EntityParamsInterface
+interface ArrayToEntityInterface
 {
-    public function convert(array $params, mixed $entity): mixed;
+    public function convert(array $params, EntityDtoInteface $entityDto): EntityDtoInteface;
 }

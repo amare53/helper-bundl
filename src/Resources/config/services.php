@@ -7,7 +7,7 @@
  */
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use Amare53\HelperBundle\Contracts\EntityParamsInterface;
+use Amare53\HelperBundle\Contracts\ArrayToEntityInterface;
 use Amare53\HelperBundle\Contracts\EntityToJsonInterface;
 use Amare53\HelperBundle\Helper\ArrayToEntity;
 use Amare53\HelperBundle\Helper\EntityToJson;
@@ -34,7 +34,7 @@ return static function (ContainerConfigurator $container) {
         ->class(EntityToJson::class)
         ->arg(0, new Reference(SerializerInterface::class));
 
-    $services->set(EntityParamsInterface::class)
+    $services->set(ArrayToEntityInterface::class)
         ->class(ArrayToEntity::class)
         ->arg(0, new Reference('doctrine.orm.entity_manager'));
 };

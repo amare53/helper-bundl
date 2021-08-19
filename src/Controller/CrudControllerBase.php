@@ -8,10 +8,11 @@
 
 namespace Amare53\HelperBundle\Controller;
 
-use Amare53\HelperBundle\Contracts\EntityParamsInterface;
+use Amare53\HelperBundle\Contracts\ArrayToEntityInterface;
 use Amare53\HelperBundle\Contracts\EntityToJsonInterface;
 use Amare53\HelperBundle\Contracts\PaginatorInterface;
 use Amare53\HelperBundle\Helper\ErrorJsonFormat;
+use Amare53\HelperBundle\Dto\EntityDto;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -33,14 +34,13 @@ abstract class CrudControllerBase extends AbstractController
     protected string|null $groupsCreate = null;
     protected string|null $groupsUpdate = null;
 
-    /**
-     * @Route("",methods={"GET","HEAD"})
-     * @param EntityToJsonInterface $entityToJson
-     * @param PaginatorInterface $paginator
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function index(EntityToJsonInterface $entityToJson, PaginatorInterface $paginator, Request $request): JsonResponse
+
+    #[Route(path: '', methods: ['GET', 'HEAD'])]
+    public function index(
+        EntityToJsonInterface $entityToJson,
+        PaginatorInterface    $paginator,
+        Request               $request
+    ): JsonResponse
     {
 
         $query = $this->getBuilder('b', $request)
@@ -50,45 +50,37 @@ abstract class CrudControllerBase extends AbstractController
         return $this->DTO($paginate, $entityToJson);
     }
 
-    /**
-     * @Route("/count/value",methods={"GET","HEAD"})
-     */
+    #[Route(path: '/count', methods: ['GET', 'HEAD'])]
     final public function count(): JsonResponse
     {
         return new JsonResponse($this->getRepository()->count([]));
     }
 
-    /**
-     * @Route("/{id}",methods={"GET","HEAD"})
-     * @param string $id
-     * @param EntityToJsonInterface $entityToJson
-     * @return JsonResponse
-     */
+    #[Route(path: '/{id}', methods: ['GET', 'HEAD'])]
     public function show(string $id, EntityToJsonInterface $entityToJson): JsonResponse
     {
         return new JsonResponse($entityToJson->toJson($this->getRepository()->find($id), $this->groupsShow));
     }
 
-
-    /**
-     * @Route("",methods={"POST"})
-     * @param Request $request
-     * @param ValidatorInterface $validator
-     * @param EntityToJsonInterface $entityToJson
-     * @param EntityParamsInterface $array_to_Entity
-     * @return JsonResponse
-     */
+    #[Route(path: '', methods: ['POST'])]
     public function create(
-        Request $request,
-        ValidatorInterface $validator,
-        EntityToJsonInterface $entityToJson,
-        EntityParamsInterface $array_to_Entity
+        Request                $request,
+        ValidatorInterface     $validator,
+        EntityToJsonInterface  $entityToJson,
+        ArrayToEntityInterface $array_to_Entity
     ): JsonResponse
     {
 
         $files = $this->extractFiles($request);
-        $entity = $array_to_Entity->convert(array_merge($request->request->all(), $files), $this->entity);
+        $entity_dto = new EntityDto();
+        $entity_dto->setEntity($this->entity);
+        $entity_conver = $array_to_Entity->convert(array_merge($request->request->all(), $files), $entity_dto);
+        $entity = $entity_conver->getEntity();
+        if ($entity_conver->hasError()){
+            return new JsonResponse($entity_conver->getErrors(), 400);
+        }
         $errors = $validator->validate(value: $entity, groups: $this->groupsCreate);
+
 
         if (count($errors) > 0) {
             return new JsonResponse(ErrorJsonFormat::getErrors($errors), 400);
@@ -99,22 +91,13 @@ abstract class CrudControllerBase extends AbstractController
     }
 
 
-    /**
-     * @Route("/{id}",methods={"PUT"})
-     * @param string $id
-     * @param Request $request
-     * @param ValidatorInterface $validator
-     * @param EntityParamsInterface $array_to_Entity
-     * @param EntityToJsonInterface $entityToJson
-     * @param PasswordHasherFactoryInterface $passwordEncoder
-     * @return JsonResponse
-     */
+    #[Route('/{id}', methods: ['PUT'])]
     public function edit(
-        string $id,
-        Request $request,
-        ValidatorInterface $validator,
-        EntityParamsInterface $array_to_Entity,
-        EntityToJsonInterface $entityToJson,
+        string                         $id,
+        Request                        $request,
+        ValidatorInterface             $validator,
+        ArrayToEntityInterface         $array_to_Entity,
+        EntityToJsonInterface          $entityToJson,
         PasswordHasherFactoryInterface $passwordEncoder
     ): JsonResponse
     {
@@ -123,19 +106,14 @@ abstract class CrudControllerBase extends AbstractController
 
         if ($entity) {
 
-            $entity->setUpdatedAt(new \DateTimeImmutable());
-
-            if ($request->request->get('password') === "") {
-                $request->request->remove('password');
-            } else if ($request->request->get('password') !== "" && $request->request->get('password') !== null) {
-                $hashes = $passwordEncoder->getPasswordHasher($entity);
-                $hashedPassword = $hashes->hash($request->request->get('password'));
-                $request->request->set('password', $hashedPassword);
-            }
-
             $files = $this->extractFiles($request);
-
-            $entity = $array_to_Entity->convert(array_merge($request->request->all(), $files), $this->entity);
+            $entity_dto = new \EntityDto();
+            $entity_dto->setEntity($this->entity);
+            $entity_conver = $array_to_Entity->convert(array_merge($request->request->all(), $files), $entity_dto);
+            $entity = $entity_conver->getEntity();
+            if ($entity_conver->hasError()){
+                return new JsonResponse($entity_conver->getErrors(), 400);
+            }
             $errors = $validator->validate(value: $entity, groups: $this->groupsUpdate);
 
             if (count($errors) > 0) {
@@ -152,12 +130,6 @@ abstract class CrudControllerBase extends AbstractController
 
 
     #[Route('/{id}', methods: ['DELETE'])]
-    /**
-     * @Route("/{id}",methods={"DELETE"})
-     * @param string $id
-     * @param EntityManagerInterface $em
-     * @return JsonResponse
-     */
     public function delete(string $id, EntityManagerInterface $em): JsonResponse
     {
         $entity = $this->getRepository()->find($id);
@@ -175,7 +147,7 @@ abstract class CrudControllerBase extends AbstractController
         return new JsonResponse(['not_exist' => "id {$id} does not exist"], 400);
     }
 
-    private function extractFiles(Request $request): array
+    public function extractFiles(Request $request): array
     {
         $files = [];
 
@@ -187,21 +159,21 @@ abstract class CrudControllerBase extends AbstractController
         return $files;
     }
 
-    private function saveEntity(mixed $entity): void
+    public function saveEntity(mixed $entity): void
     {
         $entityManager = $this->getDoctrine()->getManager();
         $entityManager->persist($entity);
         $entityManager->flush();
     }
 
-    final public function getRepository(): EntityRepository
+    public function getRepository(): EntityRepository
     {
         /** @var EntityRepository $repository */
         $repository = $this->getDoctrine()->getRepository($this->entity::class);
         return $repository;
     }
 
-    final public function getBuilder(string $alias, Request $request): QueryBuilder
+    public function getBuilder(string $alias, Request $request): QueryBuilder
     {
         return $this->getRepository()
             ->createQueryBuilder($alias)
