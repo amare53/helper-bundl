@@ -8,16 +8,18 @@
 
 namespace Amare53\HelperBundle\Helper;
 
-use Amare53\HelperBundle\Contracts\EntityParamsInterface;
+use Amare53\HelperBundle\Contracts\ArrayToEntityInterface;
+use Amare53\HelperBundle\Contracts\EntityDtoInteface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PropertyAccess\PropertyAccess;
+use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Symfony\Component\PropertyInfo\Extractor\PhpDocExtractor;
 use Symfony\Component\PropertyInfo\Extractor\ReflectionExtractor;
 use Symfony\Component\PropertyInfo\PropertyInfoExtractor;
 use Symfony\Component\PropertyInfo\Type;
 
 
-class ArrayToEntity implements EntityParamsInterface
+class ArrayToEntity implements ArrayToEntityInterface
 {
     private Type|null $types = null;
 
@@ -25,9 +27,8 @@ class ArrayToEntity implements EntityParamsInterface
     {
     }
 
-    final public function convert(array $params, mixed $entity): mixed
+    private function initPropertyInfo(): PropertyInfoExtractor
     {
-
         $phpDocExtractor = new PhpDocExtractor();
         $reflectionExtractor = new ReflectionExtractor();
         $listExtractors = [$reflectionExtractor];
@@ -36,25 +37,38 @@ class ArrayToEntity implements EntityParamsInterface
         $accessExtractors = [$reflectionExtractor];
         $propertyInitializableExtractors = [$reflectionExtractor];
 
-        $propertyInfo = new PropertyInfoExtractor(
+        return new PropertyInfoExtractor(
             $listExtractors,
             $typeExtractors,
             $descriptionExtractors,
             $accessExtractors,
             $propertyInitializableExtractors
         );
+    }
 
-        $class = get_class($entity);
-        $propertyAccessor = PropertyAccess::createPropertyAccessorBuilder()
+    private function initPropertyAccessor(): PropertyAccessor
+    {
+        return PropertyAccess::createPropertyAccessorBuilder()
             ->enableMagicCall()
             ->getPropertyAccessor();
+    }
+
+    final public function convert(array $params, EntityDtoInteface $entityDto): EntityDtoInteface
+    {
+
+        $propertyInfo = $this->initPropertyInfo();
+        $propertyAccessor = $this->initPropertyAccessor();
+        $entity = $entityDto->getEntity();
+
+        $class = get_class($entity);
 
         foreach ($params as $key => $value) {
 
             if (property_exists($entity, $key)) {
+
                 $types = $propertyInfo->getTypes($class, $key);
 
-                if ($types) {
+                if ($types && count($types) > 0) {
                     $this->types = $types[0];
                 }
 
@@ -72,51 +86,58 @@ class ArrayToEntity implements EntityParamsInterface
                     ) {
 
                         $final_items = [];
-                        foreach ($items as $item) {
-                            if ($entity_get = $this->manager
-                                ->getRepository($collectionValueType[0]->getClassName())
-                                ->find($item)){
-                                $final_items[] = $entity_get;
-                            }
-                        }
+                        try {
+                            foreach ($items as $item) {
+                                if ($entity_get = $this->manager
+                                    ->getRepository($collectionValueType[0]->getClassName())
+                                    ->find($item)) {
+                                    $final_items[] = $entity_get;
+                                }
 
-                        $value = $final_items;
+                            }
+                            $value = $final_items;
+                        } catch (\Exception $e) {
+                        }
                     }
 
                 } else {
                     if ($this->types && $this->types->getClassName()) {
-                        if (
-                            str_contains($this->types->getClassName(), 'Date') ||
-                            str_contains($this->types->getClassName(), 'Time')
-                        ) {
-                            try {
+                        try {
+                            if ($this->isDateOrTime()) {
                                 $value = new \DateTimeImmutable($value);
-                            } catch (\Exception $exception) {
+                            } else {
+                                if ($value_one = $this->manager->getRepository($this->types->getClassName())->find($value)) {
+                                    $value = $value_one;
+                                }
                             }
-                        } else {
-                            if ($value_one = $this->manager->getRepository($this->types->getClassName())->find($value)){
-                                $value = $value_one;
-                            }
+                        } catch (\Exception $exception) {
                         }
                     } else {
-                        if (
-                            str_contains($this->types->getClassName(), 'Date') ||
-                            str_contains($this->types->getClassName(), 'Time')
-                        ) {
-                            try {
+                        try {
+                            if ($this->isDateOrTime()) {
                                 $value = new \DateTimeImmutable($value);
-                            } catch (\Exception $exception) {
                             }
+                        } catch (\Exception $exception) {
                         }
                     }
                 }
 
                 try {
                     $propertyAccessor->setValue($entity, $key, $value);
-                }catch (\Exception $exception){}
+                } catch (\Exception $exception) {
+                    $entityDto->setError($key, $exception->getMessage());
+                }
             }
         }
 
-        return $entity;
+        $entityDto->setEntity($entity);
+
+        return $entityDto;
+    }
+
+    private function isDateOrTime(): bool
+    {
+        return str_contains($this->types?->getClassName(), 'Date') ||
+            str_contains($this->types?->getClassName(), 'Time');
     }
 }
