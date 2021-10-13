@@ -25,9 +25,10 @@ class EntityDto implements EntityDtoInteface
         return $this->errors;
     }
 
-    public function setError(string $key, string $value): void
+    public function setError(string $key, string $value): self
     {
         $this->errors[$key] = $value;
+        return $this;
     }
 
     public function getEntity(): mixed
@@ -35,8 +36,9 @@ class EntityDto implements EntityDtoInteface
         return $this->entity;
     }
 
-    public function setEntity(mixed $entity): void
+    public function setEntity(mixed $entity): self
     {
         $this->entity = $entity;
+        return $this;
     }
 }

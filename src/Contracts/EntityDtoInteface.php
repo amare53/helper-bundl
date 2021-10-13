@@ -12,7 +12,7 @@ interface EntityDtoInteface
 {
     public function hasError(): bool;
     public function getErrors(): array;
-    public function setError(string $key,string $value): void;
+    public function setError(string $key,string $value);
     public function getEntity(): mixed;
-    public function setEntity(mixed $entity): void;
+    public function setEntity(mixed $entity);
 }

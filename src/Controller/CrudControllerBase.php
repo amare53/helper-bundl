@@ -107,10 +107,11 @@ abstract class CrudControllerBase extends AbstractController
         if ($entity) {
 
             $files = $this->extractFiles($request);
-            $entity_dto = new \EntityDto();
-            $entity_dto->setEntity($this->entity);
+            $entity_dto = new EntityDto();
+            $entity_dto->setEntity($entity);
             $entity_conver = $array_to_Entity->convert(array_merge($request->request->all(), $files), $entity_dto);
             $entity = $entity_conver->getEntity();
+
             if ($entity_conver->hasError()){
                 return new JsonResponse($entity_conver->getErrors(), 400);
             }
