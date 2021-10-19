@@ -49,6 +49,8 @@ abstract class CrudControllerBase extends AbstractController
 
         $params = $request->query->all();
         $t_search = null;
+        unset($params['page']);
+        unset($params['limit']);
 
         if (array_key_exists('type_search',$params)){
             $t_search = $params['type_search'];
