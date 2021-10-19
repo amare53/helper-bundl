@@ -14,5 +14,7 @@ interface PaginatorInterface
 {
     public function allowSort(string ...$fields): self;
 
+    public function allowFilter(string ...$fields): self;
+
     public function paginate(Query $query): PaginationInterface;
 }

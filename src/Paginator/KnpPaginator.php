@@ -20,6 +20,7 @@ class KnpPaginator implements PaginatorInterface
     private RequestStack $requestStack;
 
     private array $sortableFields = [];
+    private array $filterFields = [];
 
     public function __construct(\Knp\Component\Pager\PaginatorInterface $paginator, RequestStack $requestStack)
     {
@@ -37,8 +38,8 @@ class KnpPaginator implements PaginatorInterface
         }
 
         return $this->paginator->paginate($query, $page, $query->getMaxResults() ?: 15, [
-            'sortFieldWhitelist' => $this->sortableFields,
-            'filterFieldWhitelist' => [],
+            'sortFieldAllowList' => $this->sortableFields,
+            'filterFieldAllowList' => $this->filterFields,
         ]);
     }
 
@@ -46,6 +47,12 @@ class KnpPaginator implements PaginatorInterface
     {
         $this->sortableFields = array_merge($this->sortableFields, $fields);
 
+        return $this;
+    }
+
+    final public function allowFilter(string ...$fields): self
+    {
+        $this->filterFields = array_merge($this->filterFields, $fields);
         return $this;
     }
 }

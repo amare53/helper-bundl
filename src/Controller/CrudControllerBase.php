@@ -33,6 +33,8 @@ abstract class CrudControllerBase extends AbstractController
     protected string|null $groupsShow = null;
     protected string|null $groupsCreate = null;
     protected string|null $groupsUpdate = null;
+    protected string $sortBy = 'createdAt';
+    protected string $sortDirection = 'DESC';
 
 
     #[Route(path: '', methods: ['GET', 'HEAD'])]
@@ -43,10 +45,27 @@ abstract class CrudControllerBase extends AbstractController
     ): JsonResponse
     {
 
-        $query = $this->getBuilder('b', $request)
-            ->getQuery();
+        $query = $this->getBuilder('b', $request);
 
-        $paginate = $paginator->paginate($query);
+        $params = $request->query->all();
+        $t_search = null;
+
+        if (array_key_exists('type_search',$params)){
+            $t_search = $params['type_search'];
+            unset($params['type_search']);
+        }
+
+        foreach ($params as $key => $value) {
+            if ($t_search && $t_search === 'like'){
+                $query->andWhere("b.{$key} like :{$key}")
+                    ->setParameter($key,"%{$value}%");
+            }else{
+                $query->andWhere("b.{$key} = :{$key}")
+                    ->setParameter($key,$value);
+            }
+        }
+
+        $paginate = $paginator->paginate($query->getQuery());
         return $this->DTO($paginate, $entityToJson);
     }
 
@@ -76,7 +95,7 @@ abstract class CrudControllerBase extends AbstractController
         $entity_dto->setEntity($this->entity);
         $entity_conver = $array_to_Entity->convert(array_merge($request->request->all(), $files), $entity_dto);
         $entity = $entity_conver->getEntity();
-        if ($entity_conver->hasError()){
+        if ($entity_conver->hasError()) {
             return new JsonResponse($entity_conver->getErrors(), 400);
         }
         $errors = $validator->validate(value: $entity, groups: $this->groupsCreate);
@@ -112,7 +131,7 @@ abstract class CrudControllerBase extends AbstractController
             $entity_conver = $array_to_Entity->convert(array_merge($request->request->all(), $files), $entity_dto);
             $entity = $entity_conver->getEntity();
 
-            if ($entity_conver->hasError()){
+            if ($entity_conver->hasError()) {
                 return new JsonResponse($entity_conver->getErrors(), 400);
             }
             $errors = $validator->validate(value: $entity, groups: $this->groupsUpdate);
@@ -178,7 +197,7 @@ abstract class CrudControllerBase extends AbstractController
     {
         return $this->getRepository()
             ->createQueryBuilder($alias)
-            ->orderBy("{$alias}.createdAt", 'DESC')
+            ->orderBy("{$alias}.{$this->sortBy}", $this->sortDirection)
             ->setMaxResults($request->query->getInt('limit', 5));
     }
 
