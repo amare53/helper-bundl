@@ -58,13 +58,15 @@ abstract class CrudControllerBase extends AbstractController
         }
 
         foreach ($params as $key => $value) {
-            if ($t_search && $t_search === 'like'){
-                $query->andWhere("b.{$key} like :{$key}")
-                    ->setParameter($key,"%{$value}%");
-            }else{
-                $query->andWhere("b.{$key} = :{$key}")
-                    ->setParameter($key,$value);
-            }
+            try {
+                if ($t_search && $t_search === 'like'){
+                    $query->andWhere("b.{$key} like :{$key}")
+                        ->setParameter($key,"%{$value}%");
+                }else{
+                    $query->andWhere("b.{$key} = :{$key}")
+                        ->setParameter($key,$value);
+                }
+            }catch (\Exception $exception){}
         }
 
         $paginate = $paginator->paginate($query->getQuery());
@@ -197,10 +199,19 @@ abstract class CrudControllerBase extends AbstractController
 
     public function getBuilder(string $alias, Request $request): QueryBuilder
     {
+        $limit = $request->query->get('limit');
+        if ($limit){
+            if ($limit === 'all' || $limit < 0){
+                $limit = $this->getRepository()->count([]);
+            }
+        }else{
+            $limit = 5;
+        }
+
         return $this->getRepository()
             ->createQueryBuilder($alias)
             ->orderBy("{$alias}.{$this->sortBy}", $this->sortDirection)
-            ->setMaxResults($request->query->getInt('limit', 5));
+            ->setMaxResults($limit);
     }
 
     public function DTO(PaginationInterface $paginate, EntityToJsonInterface $entityToJson): JsonResponse

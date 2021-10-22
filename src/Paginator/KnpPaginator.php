@@ -37,7 +37,8 @@ class KnpPaginator implements PaginatorInterface
             throw new PageOutOfBoundException();
         }
 
-        return $this->paginator->paginate($query, $page, $query->getMaxResults() ?: 15, [
+
+        return $this->paginator->paginate($query, $page, $query->getMaxResults(), [
             'sortFieldAllowList' => $this->sortableFields,
             'filterFieldAllowList' => $this->filterFields,
         ]);
