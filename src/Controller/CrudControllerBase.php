@@ -59,13 +59,20 @@ abstract class CrudControllerBase extends AbstractController
 
         foreach ($params as $key => $value) {
             try {
-                if ($t_search && $t_search === 'like'){
-                    $query->andWhere("b.{$key} like :{$key}")
-                        ->setParameter($key,"%{$value}%");
+                $query->andWhere("b.{$key} LIKE :{$key}");
+                $like = '';
+
+                if ($t_search && mb_strtolower($t_search) === 'like'){
+                    $like = "%{$value}%";
+                }else if ($t_search && mb_strtolower($t_search) === 'begin'){
+                    $like = "{$value}%";
+                }else if ($t_search && mb_strtolower($t_search) === 'end'){
+                    $like = "%{$value}";
                 }else{
-                    $query->andWhere("b.{$key} = :{$key}")
-                        ->setParameter($key,$value);
+                    $like = $value;
                 }
+
+                $query->setParameter($key,$like);
             }catch (\Exception $exception){}
         }
 
