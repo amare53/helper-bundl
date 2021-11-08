@@ -31,7 +31,7 @@ class KnpPaginator implements PaginatorInterface
     final public function paginate(Query $query): PaginationInterface
     {
         $request = $this->requestStack->getCurrentRequest();
-        $page = $request ? ( $request->query->getInt('page') ?? $request->query->getInt('p', 1)  ) : 1;
+        $page = $request ? ( $request->query->get('page') ?? $request->query->get('p', 1)  ) : 1;
 
         if ($page <= 0) {
             throw new PageOutOfBoundException();
