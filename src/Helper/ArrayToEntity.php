@@ -27,7 +27,7 @@ class ArrayToEntity implements ArrayToEntityInterface
     {
     }
 
-    private function initPropertyInfo(): PropertyInfoExtractor
+    public final function initPropertyInfo(): PropertyInfoExtractor
     {
         $phpDocExtractor = new PhpDocExtractor();
         $reflectionExtractor = new ReflectionExtractor();

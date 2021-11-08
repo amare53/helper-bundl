@@ -11,6 +11,7 @@ namespace Amare53\HelperBundle\Controller;
 use Amare53\HelperBundle\Contracts\ArrayToEntityInterface;
 use Amare53\HelperBundle\Contracts\EntityToJsonInterface;
 use Amare53\HelperBundle\Contracts\PaginatorInterface;
+use Amare53\HelperBundle\Helper\ArrayToEntity;
 use Amare53\HelperBundle\Helper\ErrorJsonFormat;
 use Amare53\HelperBundle\Dto\EntityDto;
 use Doctrine\ORM\EntityManagerInterface;
@@ -47,33 +48,33 @@ abstract class CrudControllerBase extends AbstractController
 
         $query = $this->getBuilder('b', $request);
 
+        $t_search = $request->query->get('type_search') ??
+            $request->query->get('ts') ??
+            $request->query->get('t_s') ??
+            $request->query->get('s');
+
         $params = $request->query->all();
-        $t_search = null;
-        unset($params['page']);
-        unset($params['limit']);
-
-        if (array_key_exists('type_search',$params)){
-            $t_search = $params['type_search'];
-            unset($params['type_search']);
-        }
-
         foreach ($params as $key => $value) {
-            try {
-                $query->andWhere("b.{$key} LIKE :{$key}");
-                $like = '';
+            if (property_exists($this->entity::class, $key)) {
 
-                if ($t_search && mb_strtolower($t_search) === 'like'){
+                $like = '';
+                if ($t_search && mb_strtolower($t_search) === 'like') {
+                    $query->andWhere("b.{$key} LIKE :{$key}");
                     $like = "%{$value}%";
-                }else if ($t_search && mb_strtolower($t_search) === 'begin'){
+                } else if ($t_search && mb_strtolower($t_search) === 'begin') {
+                    $query->andWhere("b.{$key} LIKE :{$key}");
                     $like = "{$value}%";
-                }else if ($t_search && mb_strtolower($t_search) === 'end'){
+                } else if ($t_search && mb_strtolower($t_search) === 'end') {
+                    $query->andWhere("b.{$key} LIKE :{$key}");
                     $like = "%{$value}";
-                }else{
+                } else {
+                    $query->andWhere("b.{$key} = :{$key}");
                     $like = $value;
                 }
 
-                $query->setParameter($key,$like);
-            }catch (\Exception $exception){}
+                $query->setParameter($key, $like);
+            }
+
         }
 
         $paginate = $paginator->paginate($query->getQuery());
@@ -206,12 +207,12 @@ abstract class CrudControllerBase extends AbstractController
 
     public function getBuilder(string $alias, Request $request): QueryBuilder
     {
-        $limit = $request->query->get('limit');
-        if ($limit){
-            if ($limit === 'all' || $limit < 0){
+        $limit = $request->query->get('limit') ?? $request->query->get('l');
+        if ($limit) {
+            if ($limit === 'all' || $limit < 0) {
                 $limit = $this->getRepository()->count([]);
             }
-        }else{
+        } else {
             $limit = 5;
         }
 
