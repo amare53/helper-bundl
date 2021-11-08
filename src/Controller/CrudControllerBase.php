@@ -47,7 +47,6 @@ abstract class CrudControllerBase extends AbstractController
     {
 
         $query = $this->getBuilder('b', $request);
-
         $t_search = $request->query->get('type_search') ??
             $request->query->get('ts') ??
             $request->query->get('t_s') ??
